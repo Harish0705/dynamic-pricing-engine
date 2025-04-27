@@ -1,0 +1,6 @@
+{
+    "type": "module",
+    "dependencies": {
+        "@aws-sdk/client-sns": "^3.797.0"
+    }
+}
