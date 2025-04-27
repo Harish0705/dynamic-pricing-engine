@@ -1,4 +1,4 @@
-import { Stack, StackProps } from "aws-cdk-lib";
+import { Stack, StackProps, CfnOutput } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -7,6 +7,7 @@ import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as cognito from "aws-cdk-lib/aws-cognito";
 
 export class DynamicPricingEngineStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -34,6 +35,31 @@ export class DynamicPricingEngineStack extends Stack {
     const notificationTopic = new sns.Topic(this, "PricingNotificationTopic", {
       topicName: "PricingNotificationTopic",
     });
+
+    const userPool = new cognito.UserPool(this, "DynamicPricingUserPool", {
+      userPoolName: "DynamicPricingUserPool",
+      selfSignUpEnabled: true,
+      signInAliases: { username: true, email: true },
+      autoVerify: { email: true }, // coginto will verify sending a verification email
+    });
+
+    const userPoolClient = new cognito.UserPoolClient(
+      this,
+      "DynamicPricingUserPoolClient",
+      {
+        userPool,
+        generateSecret: false, // No secret needed for frontend apps
+      }
+    );
+
+    const authorizer = new apigateway.CognitoUserPoolsAuthorizer(
+      this,
+      "DynamicPricingAuthorizer",
+      {
+        authorizerName: "DynamicPricingAuthorizer",
+        cognitoUserPools: [userPool],
+      }
+    );
 
     const orderLambda = new lambda.Function(this, "OrderLambda", {
       functionName: "OrderLambda",
@@ -105,19 +131,31 @@ export class DynamicPricingEngineStack extends Stack {
       "POST",
       new apigateway.LambdaIntegration(orderLambda, {
         proxy: true,
-      })
+      }),
+      {
+        authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      }
     );
     const demandResource = api.root.addResource("demand");
     demandResource.addMethod(
       "POST",
       new apigateway.LambdaIntegration(demandAnalysisLambda, {
         proxy: true,
-      })
+      }),
+      {
+        authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      }
     );
     const pricingResource = api.root.addResource("pricing");
     pricingResource.addMethod(
       "POST",
-      new apigateway.LambdaIntegration(pricingLambda, { proxy: true })
+      new apigateway.LambdaIntegration(pricingLambda, { proxy: true }),
+      {
+        authorizer,
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+      }
     );
 
     orderLambda.addToRolePolicy(
@@ -175,5 +213,17 @@ export class DynamicPricingEngineStack extends Stack {
 
     // Add the Notification Lambda as a target for the rule
     priceChangedRule.addTarget(new targets.LambdaFunction(notificationLambda));
+
+    // Output the User Pool ID
+    new CfnOutput(this, "UserPoolIdOutput", {
+      value: userPool.userPoolId,
+      exportName: "UserPoolId",
+    });
+
+    // Output the User Pool Client ID
+    new CfnOutput(this, "UserPoolClientIdOutput", {
+      value: userPoolClient.userPoolClientId,
+      exportName: "UserPoolClientId",
+    });
   }
 }
