@@ -1,5 +1,17 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand, UpdateCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  UpdateCommand,
+  PutCommand,
+} from "@aws-sdk/lib-dynamodb";
+import {
+  EventBridgeClient,
+  PutEventsCommand,
+} from "@aws-sdk/client-eventbridge";
+
+const eventBridgeClient = new EventBridgeClient({});
+const eventBusName = process.env.EVENT_BUS_NAME;
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -19,27 +31,29 @@ export const handler = async (event) => {
   const { product_id } = body;
 
   if (!product_id) {
-    console.error(
-      "Invalid event payload: Missing product_id"
-    );
+    console.error("Invalid event payload: Missing product_id");
     return {
       statusCode: 400,
-      body: JSON.stringify({ message: "Invalid event payload Missing product_id" }),
+      body: JSON.stringify({
+        message: "Invalid event payload Missing product_id",
+      }),
     };
   }
 
   // Fetch the current demand for the product
   const getDemandCommand = new GetCommand({
     TableName: demandTableName,
-    Key: { product_id },  // Using product_id from the order
+    Key: { product_id }, // Using product_id from the order
   });
 
   const productDemand = await docClient.send(getDemandCommand);
-  
+
   if (!productDemand.Item) {
     return {
       statusCode: 404,
-      body: JSON.stringify({ message: "Demand data not found for the product" }),
+      body: JSON.stringify({
+        message: "Demand data not found for the product",
+      }),
     };
   }
 
@@ -52,11 +66,12 @@ export const handler = async (event) => {
   });
 
   const productPricing = await docClient.send(getPricingCommand);
+  let newPrice;
 
   if (!productPricing.Item) {
     // If pricing doesn't exist for the product, create a new pricing entry
     const basePrice = 100; // Default base price, you can customize this
-    const priceFactor = 1.5 // Default factor, can be customized
+    const priceFactor = 1.5; // Default factor, can be customized
 
     const putPricingCommand = new PutCommand({
       TableName: pricingTableName,
@@ -64,7 +79,7 @@ export const handler = async (event) => {
         product_id,
         base_price: basePrice,
         price_factor: priceFactor,
-        current_price: basePrice + (demand * priceFactor), // Calculate initial price
+        current_price: basePrice + demand * priceFactor, // Calculate initial price
       },
     });
 
@@ -72,27 +87,50 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ product_id, price: basePrice + (demand * priceFactor) }),
+      body: JSON.stringify({
+        product_id,
+        price: basePrice + demand * priceFactor,
+      }),
     };
+  } else {
+    const basePrice = productPricing.Item.base_price;
+    const priceFactor = productPricing.Item.price_factor;
+
+    // Calculate the new price based on demand
+    newPrice = basePrice + demand * priceFactor;
+
+    // Update the current price in the pricing table based on the demand
+    const updatePricingCommand = new UpdateCommand({
+      TableName: pricingTableName,
+      Key: { product_id },
+      UpdateExpression: "SET current_price = :newPrice",
+      ExpressionAttributeValues: {
+        ":newPrice": newPrice,
+      },
+    });
+    await docClient.send(updatePricingCommand);
   }
 
-  const basePrice = productPricing.Item.base_price;
-  const priceFactor = productPricing.Item.price_factor;
-
-  // Calculate the new price based on demand
-  const newPrice = basePrice + (demand * priceFactor);
-
-  // Update the current price in the pricing table based on the demand
-  const updatePricingCommand = new UpdateCommand({
-    TableName: pricingTableName,
-    Key: { product_id },
-    UpdateExpression: "SET current_price = :newPrice",
-    ExpressionAttributeValues: {
-      ":newPrice": newPrice,
-    },
+  // Send the PriceChanged event to EventBridge after updating the price
+  const putEventsCommand = new PutEventsCommand({
+    Entries: [
+      {
+        EventBusName: eventBusName,
+        Source: "pricing.service",
+        DetailType: "PriceChanged",
+        Detail: JSON.stringify({
+          product_id: product_id,
+          new_price: newPrice,
+        }),
+      },
+    ],
   });
 
-  await docClient.send(updatePricingCommand);
+  await eventBridgeClient.send(putEventsCommand);
+  console.log(
+    "Price change event sent:",
+    JSON.stringify({ product_id, new_price: newPrice })
+  );
 
   return {
     statusCode: 200,
