@@ -109,28 +109,27 @@ export const handler = async (event) => {
       },
     });
     await docClient.send(updatePricingCommand);
+    // Send the PriceChanged event to EventBridge after updating the price
+    const putEventsCommand = new PutEventsCommand({
+      Entries: [
+        {
+          EventBusName: eventBusName,
+          Source: "pricing.service",
+          DetailType: "PriceChanged",
+          Detail: JSON.stringify({
+            product_id: product_id,
+            new_price: newPrice,
+          }),
+        },
+      ],
+    });
+
+    await eventBridgeClient.send(putEventsCommand);
+    console.log(
+      "Price change event sent:",
+      JSON.stringify({ product_id, new_price: newPrice })
+    );
   }
-
-  // Send the PriceChanged event to EventBridge after updating the price
-  const putEventsCommand = new PutEventsCommand({
-    Entries: [
-      {
-        EventBusName: eventBusName,
-        Source: "pricing.service",
-        DetailType: "PriceChanged",
-        Detail: JSON.stringify({
-          product_id: product_id,
-          new_price: newPrice,
-        }),
-      },
-    ],
-  });
-
-  await eventBridgeClient.send(putEventsCommand);
-  console.log(
-    "Price change event sent:",
-    JSON.stringify({ product_id, new_price: newPrice })
-  );
 
   return {
     statusCode: 200,
