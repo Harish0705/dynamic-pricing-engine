@@ -53,6 +53,7 @@ export class DynamicPricingEngineStack extends Stack {
       environment: {
         ORDER_TABLE: table.tableName,
         DEMAND_TABLE: demandTable.tableName,
+        EVENT_BUS_NAME: eventBus.eventBusName
       },
     });
 
@@ -113,7 +114,7 @@ export class DynamicPricingEngineStack extends Stack {
       actions: ["events:PutEvents"],
       resources: ["*"],
     }));
-    
+
     // Create an EventBridge rule to trigger the DemandAnalysisLambda when an order is placed
     const orderPlacedRule = new events.Rule(this, 'OrderPlacedRule', {
       eventBus: eventBus,
@@ -124,6 +125,17 @@ export class DynamicPricingEngineStack extends Stack {
     });
     
     orderPlacedRule.addTarget(new targets.LambdaFunction(demandAnalysisLambda));
+
+    // Create an EventBridge rule to trigger the pricingLambda when an demand is high
+    const highDemandRule = new events.Rule(this, 'HighDemandDetected', {
+      eventBus: eventBus,
+      eventPattern: {
+        source: ['demand.analysis'], // The source from your event payload
+        detailType: ['HighDemandDetected'], // The detail type for the event
+      },
+    });
+    
+    highDemandRule.addTarget(new targets.LambdaFunction(pricingLambda));
     
   }
 }
