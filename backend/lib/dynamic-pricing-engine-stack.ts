@@ -137,6 +137,11 @@ export class DynamicPricingEngineStack extends Stack {
         authorizationType: apigateway.AuthorizationType.COGNITO,
       }
     );
+    orderResource.addCorsPreflight({
+      allowOrigins: ["http://localhost:3000", "http://create-order-react-app-bucket.s3-website-us-east-1.amazonaws.com", "http://create-order-react-app-bucket-cdf.s3-website-us-east-1.amazonaws.com",'https://d22c8silp0pnlo.cloudfront.net'],
+      allowHeaders: ["Content-Type", "Authorization"],
+      allowMethods: ["OPTIONS", "GET", "POST", "PUT", "DELETE"],
+    });
     const demandResource = api.root.addResource("demand");
     demandResource.addMethod(
       "POST",
@@ -148,6 +153,11 @@ export class DynamicPricingEngineStack extends Stack {
         authorizationType: apigateway.AuthorizationType.COGNITO,
       }
     );
+    demandResource.addCorsPreflight({
+      allowOrigins: ["http://localhost:3000", "http://create-order-react-app-bucket.s3-website-us-east-1.amazonaws.com", "http://create-order-react-app-bucket-cdf.s3-website-us-east-1.amazonaws.com",'https://d22c8silp0pnlo.cloudfront.net'],
+      allowHeaders: ["Content-Type", "Authorization"],
+      allowMethods: ["OPTIONS", "GET", "POST", "PUT", "DELETE"],
+    });
     const pricingResource = api.root.addResource("pricing");
     pricingResource.addMethod(
       "POST",
@@ -157,6 +167,11 @@ export class DynamicPricingEngineStack extends Stack {
         authorizationType: apigateway.AuthorizationType.COGNITO,
       }
     );
+    pricingResource.addCorsPreflight({
+      allowOrigins: ["http://localhost:3000", "http://create-order-react-app-bucket.s3-website-us-east-1.amazonaws.com", "http://create-order-react-app-bucket-cdf.s3-website-us-east-1.amazonaws.com",'https://d22c8silp0pnlo.cloudfront.net'],
+      allowHeaders: ["Content-Type", "Authorization"],
+      allowMethods: ["OPTIONS", "GET", "POST", "PUT", "DELETE"],
+    });
 
     orderLambda.addToRolePolicy(
       new iam.PolicyStatement({
