@@ -17,7 +17,7 @@ const getCorsHeaders = (origin) => {
     "http://localhost:3000",
     "http://create-order-react-app-bucket.s3-website-us-east-1.amazonaws.com",
     "http://create-order-react-app-bucket-cdf.s3-website-us-east-1.amazonaws.com",
-    "https://d22c8silp0pnlo.cloudfront.net"
+    "https://d22c8silp0pnlo.cloudfront.net",
   ];
   if (allowedOrigins.includes(origin)) {
     return {
@@ -33,11 +33,12 @@ export const handler = async (event) => {
   console.log("Received event:", JSON.stringify(event, null, 2));
   const origin = event.headers?.origin;
   const corsHeaders = getCorsHeaders(origin);
-  // const corsHeaders = {
-  //   'Content-Type': 'application/json',
-  //   'Access-Control-Allow-Origin': 'http://localhost:3000',  // Ensure this is here if you need custom headers
-  //   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',  // Allow the methods
-  // };
+  // created intially and then used getCorsHeaders for dynamic origin
+  /*   const corsHeaders = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': 'http://localhost:3000',  // Ensure this is here if you need custom headers
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',  // Allow the methods
+  }; */
   if (event.httpMethod === "OPTIONS") {
     // Handle preflight request
     return {
