@@ -6,13 +6,13 @@ A scalable, serverless pricing engine built with AWS CDK (TypeScript) that dynam
 
 The application uses services such as **Lambda**, **API Gateway**, **DynamoDB**, **Cognito**, **EventBridge**, and **SNS**
 
-##How it works: 
+## How it works: 
 
 Whenever, the user places an order, an event will be triggered by the Order microservice which will be consumed by the Demand-Analysis microservice that updates the product demand data in the DB and triggers an event if the High demand threshold is breached.  This high demand event will be consumed by the Dynamic pricing microservice which will dynamically update the product price based on the pricing logic we have set up. It will then emit a pricing-changed event which will be consumed by the Notification microservice. Then the notification service will publish notification to a SNS topic.  
 
 Future steps. From the SNS topic we can take the necessary next steps such as sending email notifications to the users or admins about the price change, etc. 
 
-##Components: 
+## Components: 
 
 - **Infrastructure**: Set up the resources using AWS CDK Infrastructure-as-code 
 
@@ -29,11 +29,11 @@ Future steps. From the SNS topic we can take the necessary next steps such as se
 - **Notifications**: Amazon SNS used for sending alerts and updates. 
  
 
-##Front end React App: 
+## Front end React App: 
 
 I have created a front app to mimic the user order placement functionality.  I have integrated the AWS Cognito User pool (that we have created using the AWS CDK above.) which handles the signup and login functionalities.  You can use this app to test the Authentication and the backend microservices by placing an order using a dummy product id.  
 
-##Components 
+## Components 
 
 - **Infrastructure**: Deployed the front-end app to AWS using AWS CDK
 
