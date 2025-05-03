@@ -1,0 +1,49 @@
+
+Example event: 
+{
+  "resource": "/orders",
+  "path": "/orders",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-Amz-Date": "20250426T221746Z",
+  },
+  "queryStringParameters": null,
+  "pathParameters": null,
+  "stageVariables": null,
+  "requestContext": {
+    "resourceId": "resource-id",
+    "resourcePath": "/orders",
+    "httpMethod": "POST",
+    "requestId": "request-id",
+    "accountId": "account-id",
+    "stage": "prod",
+    "identity": {
+      "sourceIp": "source-ip",
+      "userAgent": "user-agent"
+    },
+    "authorizer": null
+  },
+  "body": "{\"product_id\": \"P12345\", \"quantity\": 2}",
+  "isBase64Encoded": false
+}
+
+
+cognito commands
+
+aws cognito-idp sign-up \
+    --client-id 2pra0ioml0jemglfj03cv8ub6f \
+    --username jane123 \
+    --password StrongPassword123! \
+    --region us-east-1
+    
+aws cognito-idp initiate-auth \
+  --auth-flow USER_PASSWORD_AUTH \
+  --client-id 2pra0ioml0jemglfj03cv8ub6f \
+  --auth-parameters USERNAME=jane123,PASSWORD=StrongPassword123!
+
+
+curl -X POST https://hqo1urvxk3.execute-api.us-east-1.amazonaws.com/prod/orders \
+  -H "Authorization: eyJraWQiOiJJYlFvak54cFZ4V2RUSUlrcHdZZnNlRE9EdjJ3c2llaXdcLzhTNnFMdzBrTT0iLCJhbGciOiJSUzI1NiJ9.hadjklashkdjhdhaldjasjdahgdkjsahgkdhsakj.djsbxP8hjRrFoug9uCggMcKHWzir-DWNOzJl5MHIz8FYnhaXXLo5l-E4CW0hzhjUt9WeNQDcKrPho4iRKDbflq4ox-nea4u28J-3WCUGgprWeKu_sLx8lcP8nwYKKDU1B1vJRJ3AoWsjeWkjFc-HMRdakIH_vKm_Sw6-dhgakjdgkjashdgjkashdgkjsahdjk-kjashdjksahkdjsahk-4X5rJo-ahdjsahjdhsakjhk" \
+  -H "Content-Type: application/json" \
+  -d '{"product_id": "ABCD14", "quantity": "30"}'
