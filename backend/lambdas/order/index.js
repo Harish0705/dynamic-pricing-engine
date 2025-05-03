@@ -69,7 +69,7 @@ export const handler = async (event) => {
       timestamp: Date.now(),
     };
 
-    // 1. Save the order in DynamoDB
+    // Save the order in DynamoDB
     const command = new PutCommand({
       TableName: tableName,
       Item: order,
@@ -78,7 +78,7 @@ export const handler = async (event) => {
     const response = await docClient.send(command);
     console.log("DynamoDB response:", response);
 
-    // 2. Send OrderPlaced event to EventBridge 🛎️
+    // Send OrderPlaced event to EventBridge
     const putEventsCommand = new PutEventsCommand({
       Entries: [
         {

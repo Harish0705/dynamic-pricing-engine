@@ -18,7 +18,7 @@ export class FrontendDeploymentStack extends Stack {
         ignorePublicAcls: false,
         blockPublicPolicy: false,
         restrictPublicBuckets: false,
-      }), // Block public access
+      }),
       publicReadAccess: true, // Make the bucket publicly readable
       removalPolicy: RemovalPolicy.DESTROY, // Use DESTROY only in dev environments
     });

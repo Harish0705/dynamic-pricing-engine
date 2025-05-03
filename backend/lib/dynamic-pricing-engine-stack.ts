@@ -13,7 +13,8 @@ export class DynamicPricingEngineStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
     //order table
-    const table = new dynamodb.Table(this, "OrdersTable", {
+    const orderTable = new dynamodb.Table(this, "OrdersTable", {
+      tableName: "OrderTable",
       partitionKey: { name: "order_id", type: dynamodb.AttributeType.STRING },
       stream: dynamodb.StreamViewType.NEW_IMAGE,
     });
@@ -68,12 +69,12 @@ export class DynamicPricingEngineStack extends Stack {
       handler: "index.handler",
       code: lambda.Code.fromAsset("lambdas/order"),
       environment: {
-        TABLE_NAME: table.tableName,
+        TABLE_NAME: orderTable.tableName,
         EVENT_BUS_NAME: eventBus.eventBusName,
       },
     });
 
-    table.grantReadWriteData(orderLambda);
+    orderTable.grantReadWriteData(orderLambda);
 
     const demandAnalysisLambda = new lambda.Function(this, "DemandLambda", {
       functionName: "DemandAnalysisLambda",
@@ -82,14 +83,14 @@ export class DynamicPricingEngineStack extends Stack {
       handler: "index.handler",
       code: lambda.Code.fromAsset("lambdas/demand-analysis"),
       environment: {
-        ORDER_TABLE: table.tableName,
+        ORDER_TABLE: orderTable.tableName,
         DEMAND_TABLE: demandTable.tableName,
         EVENT_BUS_NAME: eventBus.eventBusName,
       },
     });
 
     demandTable.grantReadWriteData(demandAnalysisLambda);
-    table.grantReadData(demandAnalysisLambda); // Grant read access to the order table for demand analysis
+    orderTable.grantReadData(demandAnalysisLambda); // Grant read access to the order table for demand analysis
 
     const pricingLambda = new lambda.Function(this, "PricingLambda", {
       functionName: "PricingLambda",
