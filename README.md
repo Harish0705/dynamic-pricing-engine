@@ -6,6 +6,10 @@ A scalable, serverless pricing engine built with AWS CDK (TypeScript) that dynam
 
 The application uses services such as **Lambda**, **API Gateway**, **DynamoDB**, **Cognito**, **EventBridge**, and **SNS**
 
+## Medium blog:
+
+I have written a detailed blog in medium about this. It can be accessed using this URL https://medium.com/@harishbala1995/building-a-serverless-application-using-aws-cdk-lambda-dynamodb-api-gateway-cognito-1fa4cc09b29f
+
 ## How it works: 
 
 Whenever, the user places an order, an event will be triggered by the Order microservice which will be consumed by the Demand-Analysis microservice that updates the product demand data in the DB and triggers an event if the High demand threshold is breached.  This high demand event will be consumed by the Dynamic pricing microservice which will dynamically update the product price based on the pricing logic we have set up. It will then emit a pricing-changed event which will be consumed by the Notification microservice. Then the notification service will publish notification to a SNS topic.  
